@@ -1,28 +1,51 @@
 # AWS 3-Tier Architecture (VPC + ALB + EC2 + RDS MySQL)
 
 ## Overview
-This project deploys a secure 3-tier architecture on AWS:
-- Public layer: Application Load Balancer (ALB)
-- Private app layer: EC2 (web/app) in private subnets
+This project deploys a secure and production-style 3-tier architecture on AWS:
+- Public layer: Application Load Balancer (ALB) in public subnets (multi-AZ)
+- App layer: EC2 (private subnets) running a simple Flask API behind Nginx
 - Private data layer: Amazon RDS MySQL in isolated DB subnets
+- Operations: AWS Systems Manager (SSM) Session Manager for instance access (no SSH / no bastion)
 
-Goal: demonstrate production-style networking, security controls, and private database connectivity for junior Cloud Engineer roles in Hong Kong.
+Goal: demonstrate production-style networking, security controls, and private database connectivity for junior Cloud Engineer roles.
 
 ## Architecture
-- VPC CIDR: 10.0.0.0/16
-- 2 AZs
-- Public subnets (x2): ALB + NAT Gateway
-- Private app subnets (x2): EC2 instances
-- Private DB subnets (x2): RDS MySQL
-- Internet Gateway for public ingress
-- NAT Gateway for outbound patching from private subnets
+Flow:
+Internet → ALB (public) → EC2 App (private) → RDS MySQL (private)
 
-## Security Design
-- ALB SG: allow 80/443 from Internet
-- App SG: allow 80 from ALB SG only
-- DB SG: allow 3306 from App SG only
-- No public IP on EC2 / RDS
-- RDS is not publicly accessible
+Network layout (2 AZ):
+
+- Public: public-1a, public-1b
+- Private App: app-1a, app-1b
+- Private DB: db-1a, db-1b
+
+## Key Design Choices
+Security Groups (least privilege)
+- ALB SG
+  - Inbound: 80 from 0.0.0.0/0
+  - Outbound: allow all (demo)
+
+- App SG
+  - Inbound: 80 from ALB SG
+  - Outbound: allow all (demo)
+
+- DB SG
+  - Inbound: 3306 from App SG
+  - Outbound: allow all (demo)
+
+Routing
+- Public Route Table: 0.0.0.0/0 → IGW (for ALB / NAT)
+- App Route Table: 0.0.0.0/0 → NAT Gateway (for package updates)
+- DB Route Table: local only (no internet route)
+
+Operations (No-SSH)
+- Used SSM Session Manager to access the private EC2 instance
+- Port 22 not opened; no bastion host required
+
+## API Endpoints
+Assuming the ALB DNS name is http://<ALB-DNS>:
+- GET / → returns OK
+- GET /db → connects to MySQL and returns {"result": 1}
 
 ## Deliverables / Evidence
 - docs/diagram: architecture diagram
