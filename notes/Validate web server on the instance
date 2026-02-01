@@ -1,0 +1,3 @@
+sudo systemctl status nginx --no-pager
+curl -I http://127.0.0.1
+sudo ss -lntp | grep ':80'
