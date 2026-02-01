@@ -47,9 +47,32 @@ Assuming the ALB DNS name is http://<ALB-DNS>:
 - GET / → returns OK
 - GET /db → connects to MySQL and returns {"result": 1}
 
+## Build Steps (High Level)
+
+1. VPC + Subnets (2 AZ)
+- Create 6 subnets: public/app/db across us-east-1a and us-east-1b
+2. Internet + NAT
+- Attach IGW to VPC
+- Allocate EIP + create NAT Gateway in public-1a
+- Configure route tables: public→IGW, app→NAT, db→local
+3. Security Groups
+- ALB SG / App SG / DB SG with SG-to-SG rules
+4. RDS MySQL
+- Create DB Subnet Group using db-1a/db-1b
+- Create MySQL DB with Public access = No
+5. EC2 App (Private)
+- Launch EC2 in app-1a (no public IP)
+- Install Nginx + Flask app
+- Nginx reverse proxy: :80 → 127.0.0.1:5000
+6. ALB
+- Create target group (HTTP:80), register EC2
+- Create ALB in public subnets and forward :80 to the target group
+7. SSM Validation (No-SSH)
+- Use SSM Session Manager to run commands and validate service/db connectivity
+
 ## Deliverables / Evidence
 - docs/diagram: architecture diagram
-- docs/screenshots: VPC, subnets, route tables, SG rules, ALB target health, RDS connectivity test, CloudWatch metrics/logs
+- docs/screenshots: VPC, subnets, route tables, SG rules, ALB target health, RDS connectivity test
 - userdata/: EC2 user-data bootstrap scripts
 - notes/: design decisions and troubleshooting notes
 
