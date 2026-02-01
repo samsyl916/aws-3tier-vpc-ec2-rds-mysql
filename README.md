@@ -50,25 +50,25 @@ Assuming the ALB DNS name is http://<ALB-DNS>:
 ## Build Steps (High Level)
 
 1. VPC + Subnets (2 AZ)
-- Create 6 subnets: public/app/db across us-east-1a and us-east-1b
+  - Create 6 subnets: public/app/db across us-east-1a and us-east-1b
 2. Internet + NAT
-- Attach IGW to VPC
-- Allocate EIP + create NAT Gateway in public-1a
-- Configure route tables: public→IGW, app→NAT, db→local
+  - Attach IGW to VPC
+  - Allocate EIP + create NAT Gateway in public-1a
+  - Configure route tables: public→IGW, app→NAT, db→local
 3. Security Groups
-- ALB SG / App SG / DB SG with SG-to-SG rules
+  - ALB SG / App SG / DB SG with SG-to-SG rules
 4. RDS MySQL
-- Create DB Subnet Group using db-1a/db-1b
-- Create MySQL DB with Public access = No
+  - Create DB Subnet Group using db-1a/db-1b
+  - Create MySQL DB with Public access = No
 5. EC2 App (Private)
-- Launch EC2 in app-1a (no public IP)
-- Install Nginx + Flask app
-- Nginx reverse proxy: :80 → 127.0.0.1:5000
+  - Launch EC2 in app-1a (no public IP)
+  - Install Nginx + Flask app
+  - Nginx reverse proxy: :80 → 127.0.0.1:5000
 6. ALB
-- Create target group (HTTP:80), register EC2
-- Create ALB in public subnets and forward :80 to the target group
+  - Create target group (HTTP:80), register EC2
+  - Create ALB in public subnets and forward :80 to the target group
 7. SSM Validation (No-SSH)
-- Use SSM Session Manager to run commands and validate service/db connectivity
+  - Use SSM Session Manager to run commands and validate service/db connectivity
 
 ## Deliverables / Evidence
 - docs/diagram: architecture diagram
@@ -76,16 +76,27 @@ Assuming the ALB DNS name is http://<ALB-DNS>:
 - userdata/: EC2 user-data bootstrap scripts
 - notes/: design decisions and troubleshooting notes
 
-## How to Deploy (High Level)
-1. Create VPC with 2 AZs and subnets (public/app/db)
-2. Create route tables + IGW + NAT
-3. Create Security Groups (ALB/App/DB)
-4. Launch ALB in public subnets
-5. Launch EC2 in private app subnets (with user data)
-6. Create RDS MySQL in DB subnets (private)
-7. Validate: EC2 can connect to RDS over private networking
+## Cleanup (Cost Control)
 
-## Validation
-- Confirm ALB -> EC2 (HTTP 200)
-- Confirm EC2 -> RDS (mysql client connection)
-- Confirm DB is not reachable from the Internet
+To avoid ongoing charges, delete resources in roughly this order:
+1. RDS database
+2. ALB
+3. Target Group
+4. EC2 instance
+5. NAT Gateway
+6. Elastic IP (release)
+7. Internet Gateway (detach + delete)
+8. Route tables (custom ones)
+9. Security groups
+10. Subnets
+11. VPC
+
+Most expensive to forget: NAT Gateway + Elastic IP + ALB + RDS. 
+
+## Skills Demonstrated
+- VPC design (multi-AZ subnetting)
+- Secure routing with IGW/NAT and isolated DB subnets
+- Security Group layering (SG-to-SG)
+- ALB target groups and load balancing
+- Private EC2 operations via SSM (no SSH)
+- RDS MySQL private connectivity from app tier
