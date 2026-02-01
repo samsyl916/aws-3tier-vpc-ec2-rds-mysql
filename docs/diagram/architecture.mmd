@@ -32,13 +32,25 @@ flowchart TB
       end
 
       %% ---------- DB Tier ----------
-      subgraph DBAZA["Private DB Subnet 1a (10.1.20.0/24)"]
-        RDSA["RDS MySQL\n(proj1-v2-mysql)"]
-      end
+      classDef spacer fill:transparent,stroke:transparent,color:transparent;
 
-      subgraph DBAZB["Private DB Subnet 1b (10.1.21.0/24)"]
-        RDSB["RDS standby/az\n(multi-AZ)"]
-      end
+subgraph DBAZA["Private DB Subnet 1a<br/>(10.1.20.0/24)"]
+  direction TB
+  dbspacer1[" "]:::spacer
+  RDSA["RDS MySQL<br/>(proj1-v2-mysql)"]
+end
+
+subgraph DBAZB["Private DB Subnet 1b<br/>(10.1.21.0/24)"]
+  direction TB
+  dbspacer2[" "]:::spacer
+  RDSB["RDS standby/az<br/>(multi-AZ)"]
+end
+
+subgraph AppAZB["Private App Subnet 1b<br/>(10.1.11.0/24)"]
+  direction TB
+  appspacer2[" "]:::spacer
+  EC2B["(Optional) EC2 App Instance<br/>for HA"]
+end
 
       %% ---------- Security Groups ----------
       SGALB["SG: proj1-v2-sg-alb\nInbound: 80 from 0.0.0.0/0"]
