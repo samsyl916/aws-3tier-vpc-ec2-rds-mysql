@@ -32,13 +32,17 @@ flowchart TB
       end
 
       %% ---------- DB Tier ----------
+      %%{init: {"flowchart": {"nodeSpacing": 40, "rankSpacing": 50}}}%%
+      flowchart TB
       classDef spacer fill:transparent,stroke:transparent,color:transparent;
       subgraph DBAZA["Private DB Subnet 1a (10.1.20.0/24)"]
+        direction TB
         dbspacer1[" "]:::spacer
         RDSA["RDS MySQL\n(proj1-v2-mysql)"]
       end
 
       subgraph DBAZB["Private DB Subnet 1b (10.1.21.0/24)"]
+        direction TB
         dbspacer1[" "]:::spacer
         RDSB["RDS standby/az\n(multi-AZ)"]
       end
