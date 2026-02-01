@@ -1,0 +1,3 @@
+sudo dnf install -y mariadb105
+mysql -h <RDS_ENDPOINT> -P 3306 -u admin -p
+SELECT 1;
