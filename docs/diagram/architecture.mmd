@@ -1,0 +1,73 @@
+flowchart TB
+  %% =========================
+  %% AWS 3-Tier (ALB -> EC2 -> RDS) + SSM
+  %% Region: us-east-1
+  %% =========================
+
+  Internet((Internet))
+
+  subgraph AWS["AWS Region: us-east-1"]
+    subgraph VPC["VPC: proj1-v2-vpc (10.1.0.0/16)"]
+
+      %% ---------- Public Tier ----------
+      subgraph PublicAZA["Public Subnet 1a (10.1.0.0/24)"]
+        ALB["Application Load Balancer\n(proj1-v2-alb)"]
+        NAT["NAT Gateway\n(proj1-v2-nat-1a)"]
+      end
+
+      subgraph PublicAZB["Public Subnet 1b (10.1.1.0/24)"]
+        ALB2["ALB node (multi-AZ)"]
+      end
+
+      IGW["Internet Gateway\n(proj1-v2-igw)"]
+      EIP["Elastic IP\n(for NAT)"]
+
+      %% ---------- App Tier ----------
+      subgraph AppAZA["Private App Subnet 1a (10.1.10.0/24)"]
+        EC2A["EC2 App Instance\nFlask (5000) + Nginx (80)\n(proj1-v2-app-ec2-1a)"]
+      end
+
+      subgraph AppAZB["Private App Subnet 1b (10.1.11.0/24)"]
+        EC2B["(Optional) EC2 App Instance\nfor HA"]
+      end
+
+      %% ---------- DB Tier ----------
+      subgraph DBAZA["Private DB Subnet 1a (10.1.20.0/24)"]
+        RDSA["RDS MySQL\n(proj1-v2-mysql)"]
+      end
+
+      subgraph DBAZB["Private DB Subnet 1b (10.1.21.0/24)"]
+        RDSB["RDS standby/az\n(multi-AZ)"]
+      end
+
+      %% ---------- Security Groups ----------
+      SGALB["SG: proj1-v2-sg-alb\nInbound: 80 from 0.0.0.0/0"]
+      SGAPP["SG: proj1-v2-sg-app\nInbound: 80 from SG-ALB"]
+      SGDB["SG: proj1-v2-sg-db\nInbound: 3306 from SG-APP"]
+
+      %% ---------- SSM ----------
+      SSM["AWS Systems Manager (SSM)\nSession Manager (no SSH)"]
+
+    end
+  end
+
+  %% =========================
+  %% Flows
+  %% =========================
+  Internet -->|HTTP 80| ALB
+  ALB -->|Target Group: HTTP 80| EC2A
+  EC2A -->|MySQL 3306| RDSA
+
+  %% NAT / egress
+  EC2A -->|0.0.0.0/0 via NAT| NAT
+  NAT --> EIP
+  NAT --> IGW
+  IGW --> Internet
+
+  %% SSM access (control plane)
+  SSM -.->|Session Manager| EC2A
+
+  %% Security group associations (logical)
+  SGALB -.-> ALB
+  SGAPP -.-> EC2A
+  SGDB  -.-> RDSA
